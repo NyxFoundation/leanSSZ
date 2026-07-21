@@ -77,23 +77,23 @@ theorem wfparts_cons {p : Part} {rest : List Part} (h : WFParts (p :: rest)) :
 
 /-! ## Length lemmas -/
 
-private theorem take_len_append (as bs : List UInt8) :
+theorem take_len_append (as bs : List UInt8) :
     (as ++ bs).take as.length = as := by
   induction as with
   | nil => rfl
   | cons a as ih => simp [ih]
 
-private theorem drop_len_append (as bs : List UInt8) :
+theorem drop_len_append (as bs : List UInt8) :
     (as ++ bs).drop as.length = bs := by
   induction as with
   | nil => rfl
   | cons a as ih => simp [ih]
 
-private theorem take_append_of_len {as bs : List UInt8} {n : Nat}
+theorem take_append_of_len {as bs : List UInt8} {n : Nat}
     (h : as.length = n) : (as ++ bs).take n = as := by
   subst h; exact take_len_append ..
 
-private theorem drop_append_of_len {as bs : List UInt8} {n : Nat}
+theorem drop_append_of_len {as bs : List UInt8} {n : Nat}
     (h : as.length = n) : (as ++ bs).drop n = bs := by
   subst h; exact drop_len_append ..
 
