@@ -89,7 +89,7 @@ def mkRootsList (n : Nat) : SSZList Bytes32 262144 :=
 
 def main : IO Unit := do
   IO.println "leanSSZ performance (list-based v1, uncached merkleization)"
-  bench "Bitlist 256 bits" 2000 (mkBitlist 256)
+  pure ()
   bench "Bitlist 4096 bits" 200 (mkBitlist 4096)
   bench "Bitlist 32768 bits" 20 (mkBitlist 32768)
   bench "ByteList 4KB" 200 (mkByteList 4096)
