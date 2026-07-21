@@ -1,0 +1,43 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install elan
+        run: |
+          curl -sSfL https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh \
+            | sh -s -- -y --default-toolchain none
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+
+      - name: Build library (checks every proof)
+        run: lake build
+
+      - name: Trust footprint audit
+        run: |
+          # Every axiom / @[extern] must live in the documented locations.
+          grep -rEn '^axiom |^@\[extern' LeanSSZ/ --include='*.lean' \
+            | grep -vE 'LeanSSZ/(Hasher/Sha256FFI|Merkle/Root)\.lean' \
+            && { echo "undocumented trust commitment found"; exit 1; } || true
+
+      - name: SHA-256 / merkleization known answers
+        run: |
+          lake build sanity
+          .lake/build/bin/sanity
+
+      - name: leanSpec devnet fixture conformance
+        run: |
+          lake build fixtures
+          .lake/build/bin/fixtures
+
+      - name: Rust C-ABI PoC
+        run: |
+          lake build LeanSSZ:static
+          cd poc/rust-caller && cargo run --quiet

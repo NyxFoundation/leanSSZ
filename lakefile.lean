@@ -22,3 +22,6 @@ extern_lib libleanssz_sha256 pkg := do
 
 lean_exe fixtures where
   root := `Tests.FixtureRunner
+
+lean_exe htrblock where
+  root := `Tests.HtrBlock

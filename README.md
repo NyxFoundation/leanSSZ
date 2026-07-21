@@ -39,5 +39,26 @@ The toolchain is pinned by `lean-toolchain` (matches formal-leanSpec).
 
 ## Status
 
-Phase 1 (fixed-size core) in progress. Conformance target: the SSZ JSON
-fixtures shipped with leanSpec (`fixtures/consensus/ssz/`).
+Phases 1–3 complete:
+
+- **Core codecs, proven**: `Boolean`, `Uint8/16/32/64`, `BytesN`,
+  `SSZVector`, `SSZList` (packed and offset-table layouts), `Bitvector`,
+  `Bitlist`, containers (fixed and variable fields) — every codec ships
+  machine-checked roundtrip, injectivity (derived once), and size-bound
+  theorems. The serialization core is axiom-free over the kernel.
+- **Merkleization**: `hash_tree_root` for all types, SHA-256 via C FFI
+  (the library's only trust commitments — see `docs/TRUST.md`),
+  validated by NIST known answers (`lake exe sanity`).
+- **Conformance**: all 34 leanSpec devnet SSZ fixtures pass
+  (`lake exe fixtures`; fixtures vendored, pinned to leanSpec
+  `4c9d640d`). Fixtures carry no `hash_tree_root`, so root computation
+  is covered by known answers only.
+- **C ABI + Rust PoC**: `LeanSSZ/Export.lean` exposes
+  validate / re-encode / hash_tree_root for `Block` over bytes-only
+  functions; `poc/rust-caller` links the Lean static library and passes
+  roundtrip, root, and malformed-input rejection checks end to end.
+
+Known scope notes: XMSS `Signature` is modeled as an opaque fixed
+424-byte blob (matches the wire format; its container-structured
+`hash_tree_root` is not modeled). Devnet limits are pinned as type
+parameters.

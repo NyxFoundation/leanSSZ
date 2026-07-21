@@ -85,12 +85,12 @@ of its internal `LeanSpec/SSZ/`.
 
 ## Phases
 
-| Phase | Content | Exit criterion |
-|---|---|---|
-| 1. Fixed-size core | Boolean / UintN / BytesN / Bitvector / fixed-field containers + 3 theorems | fixed-size fixtures pass |
-| 2. Variable-size | SSZList / Bitlist / ByteList / offset containers + 3 theorems | all devnet fixtures pass |
-| 3. Merkle + export | merkleization for all types, `@[export]` C ABI layer, minimal Rust caller PoC | Rust-side roundtrip + HTR match |
-| 4. Integration | formal-leanSpec switches to leanSSZ dependency | formal-leanSpec builds green |
+| Phase | Content | Exit criterion | Status |
+|---|---|---|---|
+| 1. Fixed-size core | Boolean / UintN / BytesN / Bitvector / fixed-field containers + 3 theorems | fixed-size fixtures pass | **done** |
+| 2. Variable-size | SSZList / Bitlist / ByteList / offset containers + 3 theorems | all devnet fixtures pass | **done (34/34)** |
+| 3. Merkle + export | merkleization for all types, `@[export]` C ABI layer, minimal Rust caller PoC | Rust-side roundtrip + HTR match | **done** |
+| 4. Integration | formal-leanSpec switches to leanSSZ dependency | formal-leanSpec builds green | open |
 
 Phase 2 (variable-size containers under proof) is the part prior art
 (SizzLean's `BasicSupported` cut) leaves open; closing it is this
