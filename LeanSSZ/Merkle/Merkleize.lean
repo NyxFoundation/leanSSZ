@@ -31,9 +31,9 @@ def zeroHashes [Hasher] : Nat → Bytes32
   | d + 1 => Hasher.combine (zeroHashes d) (zeroHashes d)
 
 /-- Right-pad `bytes` to a 32-byte boundary and split into chunks. -/
-def chunkify (bytes : List UInt8) : List Bytes32 :=
-  if h : bytes.length = 0 then []
-  else
+def chunkify : List UInt8 → List Bytes32
+  | [] => []
+  | bytes@(_ :: _) =>
     let head := bytes.take 32
     let chunk : Bytes32 :=
       ⟨⟨(head ++ List.replicate (32 - head.length) 0).toArray⟩, by
@@ -43,8 +43,9 @@ def chunkify (bytes : List UInt8) : List Bytes32 :=
           omega
         omega⟩
     chunk :: chunkify (bytes.drop 32)
-  termination_by bytes.length
+  termination_by bytes => bytes.length
   decreasing_by
+    subst bytes
     simp [List.length_drop]
     omega
 

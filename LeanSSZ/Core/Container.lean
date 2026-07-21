@@ -143,17 +143,18 @@ def phase1 : List (Option Nat) → List UInt8 →
     Except SSZError (List (List UInt8 ⊕ Nat) × List UInt8)
   | [], bs => .ok ([], bs)
   | some w :: sch, bs =>
-    if w ≤ bs.length then
+    -- `(bs.take w).length = w` ⟺ `w ≤ bs.length`, but costs O(w), not O(|bs|)
+    if (bs.take w).length = w then
       match phase1 sch (bs.drop w) with
       | .ok (items, rest) => .ok (.inl (bs.take w) :: items, rest)
       | .error e => .error e
-    else .error (.invalidLength w bs.length)
+    else .error (.invalidLength w (bs.take w).length)
   | none :: sch, bs =>
-    if 4 ≤ bs.length then
+    if (bs.take 4).length = 4 then
       match phase1 sch (bs.drop 4) with
       | .ok (items, rest) => .ok (.inr (LE.decodeNat (bs.take 4)) :: items, rest)
       | .error e => .error e
-    else .error (.invalidLength 4 bs.length)
+    else .error (.invalidLength 4 (bs.take 4).length)
 
 def offsetsOf : List (List UInt8 ⊕ Nat) → List Nat
   | [] => []
@@ -244,8 +245,8 @@ theorem phase1_encFixed (parts : List Part) (off : Nat) (suffix : List UInt8)
           = .ok (.inl bytes :: itemsOf rest off, suffix)
       rw [List.append_assoc]
       simp only [phase1]
-      rw [if_pos (by rw [List.length_append]; omega)]
       rw [take_append_of_len hb, drop_append_of_len hb]
+      rw [if_pos hb]
       rw [ih off suffix (wfparts_cons hwf) (by simpa [varTotal] using hoff)]
     | none =>
       have hvt : off + (bytes.length + varTotal rest) < 2 ^ 32 := by
@@ -255,9 +256,9 @@ theorem phase1_encFixed (parts : List Part) (off : Nat) (suffix : List UInt8)
           = .ok (.inr off :: itemsOf rest (off + bytes.length), suffix)
       rw [List.append_assoc]
       simp only [phase1]
-      rw [if_pos (by rw [List.length_append, LE.encodeNat_length]; omega)]
       rw [take_append_of_len (LE.encodeNat_length ..),
           drop_append_of_len (LE.encodeNat_length ..)]
+      rw [if_pos (LE.encodeNat_length ..)]
       rw [ih (off + bytes.length) suffix (wfparts_cons hwf) (by omega)]
       have hdec : LE.decodeNat (LE.encodeNat off 4) = off := by
         rw [LE.decodeNat_encodeNat]

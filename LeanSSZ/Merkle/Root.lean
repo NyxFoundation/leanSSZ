@@ -79,13 +79,13 @@ instance {n : Nat} [Hasher] : HasHTR (BytesN n) :=
 
 instance {n : Nat} [Hasher] : HasHTR (Bitvector n) :=
   ⟨fun v => merkleize
-    (chunkify (LE.encodeNat (Bits.packBits v.data) ((n + 7) / 8)))
+    (chunkify (Bits.packedBytes v.data))
     (some ((n + 255) / 256))⟩
 
 instance {limit : Nat} [Hasher] : HasHTR (Bitlist limit) :=
   ⟨fun l => mixInLength
     (merkleize
-      (chunkify (LE.encodeNat (Bits.packBits l.data) ((l.data.length + 7) / 8)))
+      (chunkify (Bits.packedBytes l.data))
       (some ((limit + 255) / 256)))
     l.data.length⟩
 

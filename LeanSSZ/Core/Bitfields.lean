@@ -118,6 +118,97 @@ theorem log2_eq {L n : Nat} (h1 : 2 ^ L ≤ n) (h2 : n < 2 ^ (L + 1)) :
 theorem pow256_eq (k : Nat) : (256 : Nat) ^ k = 2 ^ (8 * k) := by
   rw [show (256 : Nat) = 2 ^ 8 from rfl, ← Nat.pow_mul]
 
+/-! ### Fast execution path (`@[csimp]`)
+
+The `Nat`-packing definitions above are the proof substrate, but packing
+thousands of bits into one big natural is quadratic at runtime. The
+byte-at-a-time implementations below are proven equal and installed with
+`@[csimp]`, so compiled code runs them while every theorem still talks
+about the originals. -/
+
+/-- Byte-wise packing: each output byte packs 8 bits (small-`Nat`
+arithmetic only — no bignums). -/
+def bytesOfBits : List Bool → List UInt8
+  | [] => []
+  | bits@(_ :: _) =>
+    UInt8.ofNat (packBits (bits.take 8)) :: bytesOfBits (bits.drop 8)
+  termination_by bits => bits.length
+  decreasing_by
+    subst bits
+    simp [List.length_drop]
+    omega
+
+theorem packBits_append (l₁ l₂ : List Bool) :
+    packBits (l₁ ++ l₂) = packBits l₁ + 2 ^ l₁.length * packBits l₂ := by
+  induction l₁ with
+  | nil => simp [packBits]
+  | cons b rest ih =>
+    show (if b then 1 else 0) + 2 * packBits (rest ++ l₂)
+        = (if b then 1 else 0) + 2 * packBits rest
+          + 2 ^ (rest.length + 1) * packBits l₂
+    rw [ih, Nat.pow_succ, Nat.mul_comm (2 ^ rest.length) 2, Nat.mul_assoc]
+    omega
+
+theorem bytesOfBits_eq : ∀ (bits : List Bool),
+    bytesOfBits bits = LE.encodeNat (packBits bits) ((bits.length + 7) / 8)
+  | [] => by simp [bytesOfBits, packBits, LE.encodeNat]
+  | b :: t => by
+    have ih := bytesOfBits_eq ((b :: t).drop 8)
+    have hsplit := packBits_append ((b :: t).take 8) ((b :: t).drop 8)
+    rw [List.take_append_drop] at hsplit
+    have ha : packBits ((b :: t).take 8) < 256 := by
+      have h1 := packBits_lt ((b :: t).take 8)
+      have h2 : ((b :: t).take 8).length ≤ 8 := by
+        simp only [List.length_take]
+        omega
+      have h3 : 2 ^ ((b :: t).take 8).length ≤ 2 ^ 8 :=
+        Nat.pow_le_pow_right (by decide) h2
+      omega
+    have hv : packBits (b :: t)
+        = packBits ((b :: t).take 8) + 256 * packBits ((b :: t).drop 8) := by
+      by_cases h8 : 8 ≤ (b :: t).length
+      · have ht : ((b :: t).take 8).length = 8 := by
+          simp only [List.length_take, List.length_cons]
+          simp only [List.length_cons] at h8
+          omega
+        rw [ht, show (2:Nat) ^ 8 = 256 from by decide] at hsplit
+        omega
+      · have hd : (b :: t).drop 8 = [] := List.drop_eq_nil_of_le (by
+          simp only [List.length_cons]
+          simp only [List.length_cons] at h8
+          omega)
+        rw [hd] at hsplit ⊢
+        show packBits (b :: t) = _ + 256 * packBits []
+        simp [packBits] at hsplit ⊢
+        omega
+    have hk : ((b :: t).length + 7) / 8 = (((b :: t).drop 8).length + 7) / 8 + 1 := by
+      simp only [List.length_drop, List.length_cons]
+      omega
+    have hm : packBits (b :: t) % 256 = packBits ((b :: t).take 8) := by omega
+    have hd : packBits (b :: t) / 256 = packBits ((b :: t).drop 8) := by omega
+    rw [show bytesOfBits (b :: t)
+        = UInt8.ofNat (packBits ((b :: t).take 8)) :: bytesOfBits ((b :: t).drop 8)
+        from by rw [bytesOfBits]]
+    rw [hk]
+    show _ = UInt8.ofNat (packBits (b :: t) % 256)
+        :: LE.encodeNat (packBits (b :: t) / 256) ((((b :: t).drop 8).length + 7) / 8)
+    rw [hm, hd, ih]
+  termination_by bits => bits.length
+  decreasing_by
+    simp [List.length_drop]
+    omega
+
+
+/-- The packed byte form of a bit list (no delimiter) — shared by the
+codec and `hash_tree_root`. -/
+def packedBytes (bits : List Bool) : List UInt8 :=
+  LE.encodeNat (packBits bits) ((bits.length + 7) / 8)
+
+@[csimp]
+theorem packedBytes_eq_fast : @packedBytes = @bytesOfBits := by
+  funext bits
+  rw [packedBytes, bytesOfBits_eq]
+
 end Bits
 
 /-! ## Bitvector -/
@@ -162,6 +253,15 @@ theorem decBV_encBV (v : Bitvector n) : decBV (encBV v) = .ok v := by
   unfold decBV
   rw [if_pos (encBV_length ⟨data, rfl⟩)]
   simp only [hval, if_pos hpack, Bits.unpackBits_packBits]
+
+/-- Fast encoder: byte-wise packing. -/
+def encBVf {n : Nat} (v : Bitvector n) : List UInt8 :=
+  Bits.bytesOfBits v.data
+
+@[csimp]
+theorem encBV_eq_fast : @encBV = @encBVf := by
+  funext n v
+  rw [encBVf, Bits.bytesOfBits_eq, encBV, v.length_eq]
 
 end Bitvector
 
@@ -250,6 +350,22 @@ theorem decBL_encBL (l : Bitlist limit) : decBL (encBL l) = .ok l := by
   simp only [hval, if_neg hne, hlog, hunpack]
   rw [dif_pos ⟨encBL_length (limit := limit) ⟨data, hle⟩, hle⟩]
 
+/-- Fast encoder: append the delimiter bit, pack byte-wise. -/
+def encBLf {limit : Nat} (l : Bitlist limit) : List UInt8 :=
+  Bits.bytesOfBits (l.data ++ [true])
+
+@[csimp]
+theorem encBL_eq_fast : @encBL = @encBLf := by
+  funext limit l
+  have h1 : Bits.packBits (l.data ++ [true])
+      = Bits.packBits l.data + 2 ^ l.data.length := by
+    rw [Bits.packBits_append]
+    simp [Bits.packBits]
+  have h2 : ((l.data ++ [true]).length + 7) / 8 = l.data.length / 8 + 1 := by
+    simp only [List.length_append, List.length_cons, List.length_nil]
+    omega
+  rw [encBL, encBLf, Bits.bytesOfBits_eq, h1, h2]
+
 end Bitlist
 
 instance {limit : Nat} : SSZCodec (Bitlist limit) where
@@ -263,3 +379,4 @@ instance {limit : Nat} : LawfulSSZ (Bitlist limit) where
   enc_size_le := Bitlist.encBL_length_le
 
 end LeanSSZ
+

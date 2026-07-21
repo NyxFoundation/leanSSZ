@@ -75,8 +75,26 @@ def bench {T : Type} [SSZCodec T] [HasHTR T]
     let v ← vr.get
     pure (htr v).val.size
 
+def mkBitlist (bits : Nat) : Bitlist 1073741824 :=
+  ⟨List.replicate (min bits 1073741824) true, by
+    simp [List.length_replicate]; omega⟩
+
+def mkByteList (n : Nat) : ByteList512KiB :=
+  ⟨List.replicate (min n (512*1024)) (0xab : UInt8), by
+    simp [List.length_replicate]; omega⟩
+
+def mkRootsList (n : Nat) : SSZList Bytes32 262144 :=
+  ⟨List.replicate (min n 262144) (BytesN.zero 32), by
+    simp [List.length_replicate]; omega⟩
+
 def main : IO Unit := do
   IO.println "leanSSZ performance (list-based v1, uncached merkleization)"
+  bench "Bitlist 256 bits" 2000 (mkBitlist 256)
+  bench "Bitlist 4096 bits" 200 (mkBitlist 4096)
+  bench "Bitlist 32768 bits" 20 (mkBitlist 32768)
+  bench "ByteList 4KB" 200 (mkByteList 4096)
+  bench "ByteList 64KB" 20 (mkByteList 65536)
+  bench "List<Bytes32> x1024 (packed 32KB)" 50 (mkRootsList 1024)
   bench "Checkpoint" 10000 mkCheckpoint
   bench "AttestationData" 5000 mkAttData
   bench "Block (empty body)" 2000 (mkBlock 0 0 (by omega))
