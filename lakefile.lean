@@ -25,3 +25,6 @@ lean_exe fixtures where
 
 lean_exe htrblock where
   root := `Tests.HtrBlock
+
+lean_exe bench where
+  root := `Tests.Bench
