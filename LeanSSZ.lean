@@ -13,3 +13,4 @@ import LeanSSZ.Core.Vector
 import LeanSSZ.Core.Utils
 import LeanSSZ.Core.Sequence
 import LeanSSZ.Core.List
+import LeanSSZ.Core.Bitfields
