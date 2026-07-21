@@ -34,6 +34,16 @@ theorem encodeNat_length (n k : Nat) : (encodeNat n k).length = k := by
   | zero => rfl
   | succ k ih => simp [encodeNat, ih]
 
+theorem decodeNat_lt (bs : List UInt8) : decodeNat bs < 256 ^ bs.length := by
+  induction bs with
+  | nil => simp [decodeNat]
+  | cons b rest ih =>
+    show b.toNat + 256 * decodeNat rest < 256 ^ (rest.length + 1)
+    have hb : b.toNat < 256 := b.toNat_lt
+    have := ih
+    rw [Nat.pow_succ, Nat.mul_comm (256 ^ rest.length) 256]
+    omega
+
 /--
 Positional base-`b` step lemma: peel off the lowest base-`b` digit of `n`,
 modulo the next `m` digits.
@@ -91,10 +101,10 @@ end LE
 
 /-! ## Width-specific wrappers
 
-Each width `w ∈ {8, 16, 32, 64}` gets `encode` (exactly `w / 8` LE bytes),
-`decode` (rejects any other length), the roundtrip theorem, and
-`SSZType` / `LawfulSSZ` instances. The bodies are deliberately identical
-modulo the width; a macro would obscure more than it saves at four sites.
+Each width `w ∈ {8, 16, 32, 64}` gets `encU` (exactly `w / 8` LE bytes),
+`decU` (rejects any other length), the roundtrip theorem, and codec
+instances. The bodies are deliberately identical modulo the width; a macro
+would obscure more than it saves at four sites.
 -/
 
 abbrev Uint8 := UInt8
@@ -104,25 +114,23 @@ abbrev Uint64 := UInt64
 
 namespace Uint8
 
-def encode (v : Uint8) : ByteArray :=
-  ⟨(LE.encodeNat v.toNat 1).toArray⟩
+def encU (v : Uint8) : List UInt8 := LE.encodeNat v.toNat 1
 
-def decode (bs : ByteArray) : Except SSZError Uint8 :=
-  if bs.size = 1 then
-    .ok (UInt8.ofNat (LE.decodeNat bs.data.toList))
+def decU (bs : List UInt8) : Except SSZError Uint8 :=
+  if bs.length = 1 then
+    .ok (UInt8.ofNat (LE.decodeNat bs))
   else
-    .error (.invalidLength 1 bs.size)
+    .error (.invalidLength 1 bs.length)
 
-theorem encode_size (v : Uint8) : (encode v).size = 1 := by
-  show (LE.encodeNat v.toNat 1).toArray.size = 1
-  rw [List.size_toArray, LE.encodeNat_length]
+theorem encU_length (v : Uint8) : (encU v).length = 1 :=
+  LE.encodeNat_length ..
 
-theorem decode_encode (v : Uint8) : decode (encode v) = .ok v := by
-  unfold decode
-  rw [if_pos (encode_size v)]
+theorem decU_encU (v : Uint8) : decU (encU v) = .ok v := by
+  unfold decU
+  rw [if_pos (encU_length v)]
   congr 1
-  show UInt8.ofNat (LE.decodeNat (LE.encodeNat v.toNat 1).toArray.toList) = v
-  rw [List.toList_toArray, LE.decodeNat_encodeNat]
+  show UInt8.ofNat (LE.decodeNat (LE.encodeNat v.toNat 1)) = v
+  rw [LE.decodeNat_encodeNat]
   have h_pow : (256 : Nat) ^ 1 = 2 ^ 8 := by decide
   rw [h_pow, Nat.mod_eq_of_lt v.toNat_lt]
   exact UInt8.ofNat_toNat
@@ -131,25 +139,23 @@ end Uint8
 
 namespace Uint16
 
-def encode (v : Uint16) : ByteArray :=
-  ⟨(LE.encodeNat v.toNat 2).toArray⟩
+def encU (v : Uint16) : List UInt8 := LE.encodeNat v.toNat 2
 
-def decode (bs : ByteArray) : Except SSZError Uint16 :=
-  if bs.size = 2 then
-    .ok (UInt16.ofNat (LE.decodeNat bs.data.toList))
+def decU (bs : List UInt8) : Except SSZError Uint16 :=
+  if bs.length = 2 then
+    .ok (UInt16.ofNat (LE.decodeNat bs))
   else
-    .error (.invalidLength 2 bs.size)
+    .error (.invalidLength 2 bs.length)
 
-theorem encode_size (v : Uint16) : (encode v).size = 2 := by
-  show (LE.encodeNat v.toNat 2).toArray.size = 2
-  rw [List.size_toArray, LE.encodeNat_length]
+theorem encU_length (v : Uint16) : (encU v).length = 2 :=
+  LE.encodeNat_length ..
 
-theorem decode_encode (v : Uint16) : decode (encode v) = .ok v := by
-  unfold decode
-  rw [if_pos (encode_size v)]
+theorem decU_encU (v : Uint16) : decU (encU v) = .ok v := by
+  unfold decU
+  rw [if_pos (encU_length v)]
   congr 1
-  show UInt16.ofNat (LE.decodeNat (LE.encodeNat v.toNat 2).toArray.toList) = v
-  rw [List.toList_toArray, LE.decodeNat_encodeNat]
+  show UInt16.ofNat (LE.decodeNat (LE.encodeNat v.toNat 2)) = v
+  rw [LE.decodeNat_encodeNat]
   have h_pow : (256 : Nat) ^ 2 = 2 ^ 16 := by decide
   rw [h_pow, Nat.mod_eq_of_lt v.toNat_lt]
   exact UInt16.ofNat_toNat
@@ -158,25 +164,23 @@ end Uint16
 
 namespace Uint32
 
-def encode (v : Uint32) : ByteArray :=
-  ⟨(LE.encodeNat v.toNat 4).toArray⟩
+def encU (v : Uint32) : List UInt8 := LE.encodeNat v.toNat 4
 
-def decode (bs : ByteArray) : Except SSZError Uint32 :=
-  if bs.size = 4 then
-    .ok (UInt32.ofNat (LE.decodeNat bs.data.toList))
+def decU (bs : List UInt8) : Except SSZError Uint32 :=
+  if bs.length = 4 then
+    .ok (UInt32.ofNat (LE.decodeNat bs))
   else
-    .error (.invalidLength 4 bs.size)
+    .error (.invalidLength 4 bs.length)
 
-theorem encode_size (v : Uint32) : (encode v).size = 4 := by
-  show (LE.encodeNat v.toNat 4).toArray.size = 4
-  rw [List.size_toArray, LE.encodeNat_length]
+theorem encU_length (v : Uint32) : (encU v).length = 4 :=
+  LE.encodeNat_length ..
 
-theorem decode_encode (v : Uint32) : decode (encode v) = .ok v := by
-  unfold decode
-  rw [if_pos (encode_size v)]
+theorem decU_encU (v : Uint32) : decU (encU v) = .ok v := by
+  unfold decU
+  rw [if_pos (encU_length v)]
   congr 1
-  show UInt32.ofNat (LE.decodeNat (LE.encodeNat v.toNat 4).toArray.toList) = v
-  rw [List.toList_toArray, LE.decodeNat_encodeNat]
+  show UInt32.ofNat (LE.decodeNat (LE.encodeNat v.toNat 4)) = v
+  rw [LE.decodeNat_encodeNat]
   have h_pow : (256 : Nat) ^ 4 = 2 ^ 32 := by decide
   rw [h_pow, Nat.mod_eq_of_lt v.toNat_lt]
   exact UInt32.ofNat_toNat
@@ -189,70 +193,89 @@ namespace Uint64
 theorem range (v : Uint64) : v.toNat < 2 ^ 64 :=
   v.toNat_lt
 
-def encode (v : Uint64) : ByteArray :=
-  ⟨(LE.encodeNat v.toNat 8).toArray⟩
+def encU (v : Uint64) : List UInt8 := LE.encodeNat v.toNat 8
 
-def decode (bs : ByteArray) : Except SSZError Uint64 :=
-  if bs.size = 8 then
-    .ok (UInt64.ofNat (LE.decodeNat bs.data.toList))
+def decU (bs : List UInt8) : Except SSZError Uint64 :=
+  if bs.length = 8 then
+    .ok (UInt64.ofNat (LE.decodeNat bs))
   else
-    .error (.invalidLength 8 bs.size)
+    .error (.invalidLength 8 bs.length)
 
-theorem encode_size (v : Uint64) : (encode v).size = 8 := by
-  show (LE.encodeNat v.toNat 8).toArray.size = 8
-  rw [List.size_toArray, LE.encodeNat_length]
+theorem encU_length (v : Uint64) : (encU v).length = 8 :=
+  LE.encodeNat_length ..
 
 /-- SSZ-3: a Uint64 is recovered by 8-byte LE encode/decode. -/
-theorem decode_encode (v : Uint64) : decode (encode v) = .ok v := by
-  unfold decode
-  rw [if_pos (encode_size v)]
+theorem decU_encU (v : Uint64) : decU (encU v) = .ok v := by
+  unfold decU
+  rw [if_pos (encU_length v)]
   congr 1
-  show UInt64.ofNat (LE.decodeNat (LE.encodeNat v.toNat 8).toArray.toList) = v
-  rw [List.toList_toArray, LE.decodeNat_encodeNat]
+  show UInt64.ofNat (LE.decodeNat (LE.encodeNat v.toNat 8)) = v
+  rw [LE.decodeNat_encodeNat]
   have h_pow : (256 : Nat) ^ 8 = 2 ^ 64 := by decide
   rw [h_pow, Nat.mod_eq_of_lt v.toNat_lt]
   exact UInt64.ofNat_toNat
 
 end Uint64
 
-instance : SSZType Uint8 where
-  serialize := Uint8.encode
-  deserialize := Uint8.decode
+instance : SSZCodec Uint8 where
+  enc := Uint8.encU
+  dec := Uint8.decU
   isFixedSize := true
   maxSize := 1
 
 instance : LawfulSSZ Uint8 where
-  decode_encode := Uint8.decode_encode
-  encode_size_le_max v := Nat.le_of_eq (Uint8.encode_size v)
+  dec_enc := Uint8.decU_encU
+  enc_size_le v := Nat.le_of_eq (Uint8.encU_length v)
 
-instance : SSZType Uint16 where
-  serialize := Uint16.encode
-  deserialize := Uint16.decode
+instance : SSZFixed Uint8 where
+  size := 1
+  enc_size := Uint8.encU_length
+
+instance : SSZCodec Uint16 where
+  enc := Uint16.encU
+  dec := Uint16.decU
   isFixedSize := true
   maxSize := 2
 
 instance : LawfulSSZ Uint16 where
-  decode_encode := Uint16.decode_encode
-  encode_size_le_max v := Nat.le_of_eq (Uint16.encode_size v)
+  dec_enc := Uint16.decU_encU
+  enc_size_le v := Nat.le_of_eq (Uint16.encU_length v)
 
-instance : SSZType Uint32 where
-  serialize := Uint32.encode
-  deserialize := Uint32.decode
+instance : SSZFixed Uint16 where
+  size := 2
+  enc_size := Uint16.encU_length
+
+instance : SSZCodec Uint32 where
+  enc := Uint32.encU
+  dec := Uint32.decU
   isFixedSize := true
   maxSize := 4
 
 instance : LawfulSSZ Uint32 where
-  decode_encode := Uint32.decode_encode
-  encode_size_le_max v := Nat.le_of_eq (Uint32.encode_size v)
+  dec_enc := Uint32.decU_encU
+  enc_size_le v := Nat.le_of_eq (Uint32.encU_length v)
 
-instance : SSZType Uint64 where
-  serialize := Uint64.encode
-  deserialize := Uint64.decode
+instance : SSZFixed Uint32 where
+  size := 4
+  enc_size := Uint32.encU_length
+
+instance : SSZCodec Uint64 where
+  enc := Uint64.encU
+  dec := Uint64.decU
   isFixedSize := true
   maxSize := 8
 
 instance : LawfulSSZ Uint64 where
-  decode_encode := Uint64.decode_encode
-  encode_size_le_max v := Nat.le_of_eq (Uint64.encode_size v)
+  dec_enc := Uint64.decU_encU
+  enc_size_le v := Nat.le_of_eq (Uint64.encU_length v)
+
+instance : SSZFixed Uint64 where
+  size := 8
+  enc_size := Uint64.encU_length
+
+instance : SSZPositive Uint8 := ⟨Nat.one_pos⟩
+instance : SSZPositive Uint16 := ⟨by decide⟩
+instance : SSZPositive Uint32 := ⟨by decide⟩
+instance : SSZPositive Uint64 := ⟨by decide⟩
 
 end LeanSSZ

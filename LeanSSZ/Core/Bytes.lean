@@ -55,30 +55,46 @@ instance : LawfulBEq (BytesN n) where
 instance : Repr (BytesN n) := ⟨fun b p => reprPrec b.val.data p⟩
 
 /-- Serialization is the identity on the underlying bytes. -/
-def encode (b : BytesN n) : ByteArray := b.val
+def encB (b : BytesN n) : List UInt8 := b.val.data.toList
 
-def decode (bs : ByteArray) : Except SSZError (BytesN n) :=
-  if h : bs.size = n then
-    .ok ⟨bs, h⟩
+def decB (bs : List UInt8) : Except SSZError (BytesN n) :=
+  if h : bs.length = n then
+    .ok ⟨⟨bs.toArray⟩, by simpa [ByteArray.size] using h⟩
   else
-    .error (.invalidLength n bs.size)
+    .error (.invalidLength n bs.length)
 
-theorem decode_encode (b : BytesN n) : decode (encode b) = .ok b := by
-  obtain ⟨v, h⟩ := b
-  simp [decode, encode, h]
+theorem encB_length (b : BytesN n) : (encB b).length = n := by
+  simpa [encB] using b.property
 
-theorem encode_size (b : BytesN n) : (encode b).size = n := b.property
+theorem decB_encB (b : BytesN n) : decB (encB b) = .ok b := by
+  obtain ⟨⟨d⟩, h⟩ := b
+  have hd : d.size = n := by simpa [ByteArray.size] using h
+  simp [decB, encB, hd]
 
 end BytesN
 
-instance {n : Nat} : SSZType (BytesN n) where
-  serialize := BytesN.encode
-  deserialize := BytesN.decode
+instance {n : Nat} : SSZCodec (BytesN n) where
+  enc := BytesN.encB
+  dec := BytesN.decB
   isFixedSize := true
   maxSize := n
 
 instance {n : Nat} : LawfulSSZ (BytesN n) where
-  decode_encode := BytesN.decode_encode
-  encode_size_le_max b := Nat.le_of_eq (BytesN.encode_size b)
+  dec_enc := BytesN.decB_encB
+  enc_size_le b := Nat.le_of_eq (BytesN.encB_length b)
+
+instance {n : Nat} : SSZFixed (BytesN n) where
+  size := n
+  enc_size := BytesN.encB_length
+
+/-- Positivity per concrete width (all widths leanSpec uses). Stated on
+`BytesN <literal>` so instance search needs no arithmetic. -/
+instance : SSZPositive (BytesN 4)  := ⟨by decide⟩
+instance : SSZPositive (BytesN 16) := ⟨by decide⟩
+instance : SSZPositive (BytesN 20) := ⟨by decide⟩
+instance : SSZPositive (BytesN 32) := ⟨by decide⟩
+instance : SSZPositive (BytesN 33) := ⟨by decide⟩
+instance : SSZPositive (BytesN 52) := ⟨by decide⟩
+instance : SSZPositive (BytesN 64) := ⟨by decide⟩
 
 end LeanSSZ
