@@ -16,3 +16,6 @@ import LeanSSZ.Core.List
 import LeanSSZ.Core.Bitfields
 import LeanSSZ.Core.Container
 import LeanSSZ.Core.ContainerCodec
+import LeanSSZ.Hasher.Sha256FFI
+import LeanSSZ.Merkle.Merkleize
+import LeanSSZ.Merkle.Root

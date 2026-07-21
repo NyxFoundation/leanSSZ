@@ -24,19 +24,20 @@ grep -rEn '^axiom |^@\[extern' LeanSSZ/ --include='*.lean'
 
 ## Inside the repository
 
-| Commitment | Kind | Location | Status |
+| Commitment | Kind | Location | Notes |
 |---|---|---|---|
-| *(none yet)* | | | Phase 1 core is axiom-free over the kernel |
+| `Sha256.combineRaw` | `@[extern "lssz_sha256_combine"]` | `LeanSSZ/Hasher/Sha256FFI.lean` | hash of two 32-byte inputs; the sole merkleization primitive |
+| `Sha256.hashRaw` | `@[extern "lssz_sha256"]` | `LeanSSZ/Hasher/Sha256FFI.lean` | general SHA-256, exposed for CAVP validation only |
+| `Sha256.combineRaw_size` | `axiom` | `LeanSSZ/Hasher/Sha256FFI.lean` | FFI combine returns 32 bytes; replaceable by a theorem once a pure implementation lands |
+| `HasHTR.collisionResistance` | `axiom` (SSZ-7) | `LeanSSZ/Merkle/Root.lean` | idealized injectivity of the SHA-256 merkleization; cryptographic assumption, not provable |
 
-Planned commitments (land with the Merkle phase, and nowhere else):
+The C implementation itself (`c/sha256.c`) is outside the proof boundary;
+`lake exe sanity` checks it against NIST known answers and the Ethereum
+zero-subtree roots.
 
-- `sha256Hash` / `sha256Combine` — `@[extern]` FFI primitives,
-  `LeanSSZ/Hasher/Sha256FFI.lean` only.
-- `sha256*_eq_spec` — equivalence axioms for the FFI primitives
-  (each replaceable later by a proved theorem without changing
-  dependent statements).
-- `collisionResistance` (SSZ-7) — idealized injectivity of the SSZ
-  Merkleization; a cryptographic assumption, not provable.
+The serialization core (`LeanSSZ/Core/`) — every roundtrip, injectivity,
+and size-bound theorem — is axiom-free over the kernel: the commitments
+above are reachable only from `hash_tree_root`.
 
 Rules:
 
