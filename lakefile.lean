@@ -19,3 +19,6 @@ extern_lib libleanssz_sha256 pkg := do
   let libFile := pkg.staticLibDir / (nameToStaticLib "leanssz_sha256")
   let oJob ← fetch <| pkg.target ``sha256.o
   buildStaticLib libFile #[oJob]
+
+lean_exe fixtures where
+  root := `Tests.FixtureRunner
