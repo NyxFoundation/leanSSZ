@@ -1,0 +1,5 @@
+name = "LeanSSZ"
+defaultTargets = ["LeanSSZ"]
+
+[[lean_lib]]
+name = "LeanSSZ"
