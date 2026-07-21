@@ -127,14 +127,6 @@ and `hash_tree_root` are now linear in size.
 Effect of the byte-wise `@[csimp]` path (before → after), Bitlist 32768:
 serialize 47.6 ms → 1.5 ms, `hash_tree_root` 48 ms → 1.5 ms (~32×).
 
-**Known limitation — decode of large bitfields is still O(bits²).**
-`decBV` / `decBL` build the value as one `Nat` (`LE.decodeNat`) and
-destructure it (`unpackBits`), both quadratic. The fix is a byte-wise
-fast decoder installed by `@[csimp]` (mirroring the encoder), gated on a
-few `Nat` bit-arithmetic lemmas; it is not yet landed. Realistic messages
-decode fine (State ~54 ms); the quadratic term only bites on
-adversarially large all-ones bitfields.
-
 The proof substrate is unchanged by all of this: every theorem still
 refers to the `Nat`-packing definitions; `@[csimp]` only swaps the
 compiled code, and the equalities are proved.
