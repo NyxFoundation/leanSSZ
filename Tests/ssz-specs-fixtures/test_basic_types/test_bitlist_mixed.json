@@ -1,0 +1,23 @@
+{
+    "tests/fillers/ssz/test_basic_types.py::test_bitlist_mixed[ssz_test]": {
+        "typeName": "SampleBitlist16",
+        "value": {
+            "data": [
+                true,
+                false,
+                true,
+                true,
+                false
+            ]
+        },
+        "serialized": "0x2d",
+        "root": "0x88f1b289bdd0b2c8cc9ee45ebb26d1330024a595ead0a755eaf8cd164d90ab81",
+        "_info": {
+            "hash": "0x93ed6e8cd22d54b21b1f7dd314b181eccabe5b9f9f312e051ec4abe9b104bfac",
+            "comment": "`ssz-specs` generated test",
+            "testId": "tests/fillers/ssz/test_basic_types.py::test_bitlist_mixed",
+            "description": "A partially filled bitlist round-trips unchanged.\n\nGiven\n-----\n- a bitlist holding five mixed bits, below its 16-bit limit.\n\nWhen\n----\n- the value is encoded and then decoded.\n\nThen\n----\n- the decoded value equals the original.",
+            "fixtureFormat": "ssz_test"
+        }
+    }
+}

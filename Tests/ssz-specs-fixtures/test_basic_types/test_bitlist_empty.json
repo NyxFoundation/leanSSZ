@@ -1,0 +1,17 @@
+{
+    "tests/fillers/ssz/test_basic_types.py::test_bitlist_empty[ssz_test]": {
+        "typeName": "SampleBitlist16",
+        "value": {
+            "data": []
+        },
+        "serialized": "0x01",
+        "root": "0xf5a5fd42d16a20302798ef6ed309979b43003d2320d9f0e8ea9831a92759fb4b",
+        "_info": {
+            "hash": "0x59ea4e7d36798be9cce9ba01e489b2531228e5769fe90d60eb96ddd519c67016",
+            "comment": "`ssz-specs` generated test",
+            "testId": "tests/fillers/ssz/test_basic_types.py::test_bitlist_empty",
+            "description": "An empty bitlist round-trips unchanged.\n\nGiven\n-----\n- a bitlist with no bits.\n\nWhen\n----\n- the value is encoded and then decoded.\n\nThen\n----\n- the decoded value equals the original.\n- the encoding is the sentinel-only byte 0x01.",
+            "fixtureFormat": "ssz_test"
+        }
+    }
+}

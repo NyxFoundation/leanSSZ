@@ -1,0 +1,21 @@
+{
+    "tests/fillers/ssz/test_decode_failure_smoke.py::test_ssz_decode_failure_bitlist_exceeds_limit[ssz_test]": {
+        "rejectionReason": "DECODE_ERROR",
+        "typeName": "SmokeBitlist8",
+        "value": {
+            "data": [
+                false
+            ]
+        },
+        "rawBytes": "0x0010",
+        "serialized": "0x0010",
+        "root": "",
+        "_info": {
+            "hash": "0x971ac5a4e4938968b9c0cb6909514df065af5ef2620b1e88bfdee46a7356959f",
+            "comment": "`ssz-specs` generated test",
+            "testId": "tests/fillers/ssz/test_decode_failure_smoke.py::test_ssz_decode_failure_bitlist_exceeds_limit",
+            "description": "Decoding a bitlist whose contents imply too many bits is rejected.\n\nGiven\n-----\n- a bitlist type capped at eight bits.\n- the input bytes 0x0010, which place the sentinel at bit sixteen.\n\nWhen\n----\n- the input is decoded into that type.\n\nThen\n----\n- decoding is rejected.\n- the reason is that the implied bit-length exceeds the limit.",
+            "fixtureFormat": "ssz_test"
+        }
+    }
+}

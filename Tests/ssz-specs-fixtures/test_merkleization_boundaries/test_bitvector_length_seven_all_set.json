@@ -1,0 +1,25 @@
+{
+    "tests/fillers/ssz/test_merkleization_boundaries.py::test_bitvector_length_seven_all_set[ssz_test]": {
+        "typeName": "BoundaryBitvector7",
+        "value": {
+            "data": [
+                true,
+                true,
+                true,
+                true,
+                true,
+                true,
+                true
+            ]
+        },
+        "serialized": "0x7f",
+        "root": "0x7f00000000000000000000000000000000000000000000000000000000000000",
+        "_info": {
+            "hash": "0x03709aaec2c602bdf8374159d20bcabfeb4f98f859ecf21662d1a7d5cafa0a7e",
+            "comment": "`ssz-specs` generated test",
+            "testId": "tests/fillers/ssz/test_merkleization_boundaries.py::test_bitvector_length_seven_all_set",
+            "description": "A seven-bit vector merkleizes to a stable root.\n\nGiven\n-----\n- a seven-bit vector with all bits set.\n- one pad bit before the byte boundary.\n\nWhen\n----\n- the value is merkleized.\n\nThen\n----\n- the root matches the expected single-chunk layout.",
+            "fixtureFormat": "ssz_test"
+        }
+    }
+}

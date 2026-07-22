@@ -51,8 +51,13 @@ Phases 1–3 complete:
   validated by NIST known answers (`lake exe sanity`).
 - **Conformance**: all 34 leanSpec devnet SSZ fixtures pass
   (`lake exe fixtures`; fixtures vendored, pinned to leanSpec
-  `4c9d640d`). Fixtures carry no `hash_tree_root`, so root computation
-  is covered by known answers only.
+  `4c9d640d`). These fixtures carry no `hash_tree_root`.
+- **ssz-specs conformance**: all 60 in-subset `ssz-specs` vectors pass
+  (`lake exe sszspecs`; fixtures vendored, pinned to `ssz-specs`
+  `769485dd`). These vectors also carry `root`, so `hash_tree_root` is
+  checked byte-for-byte per case, and decode-failure vectors confirm
+  strict rejection. The 8 `Uint128` / `Uint256` vectors are outside
+  leanSpec's subset and are explicitly skipped, not silently dropped.
 - **C ABI + Rust PoC**: `LeanSSZ/Export.lean` exposes
   validate / re-encode / hash_tree_root for `Block` over bytes-only
   functions; `poc/rust-caller` links the Lean static library and passes
